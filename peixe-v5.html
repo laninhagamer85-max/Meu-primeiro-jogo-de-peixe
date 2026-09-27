@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Algas Saltitantes - Edição Profissional!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background-color: #050d1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #game-container {
+      position: relative;
+      width: 800px;
+      height: 450px;
+      border: 4px solid #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+    canvas { display: block; }
+    
+    .hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+    .hud-item {
+      background: rgba(0, 20, 40, 0.65);
+      backdrop-filter: blur(4px);
+      padding: 6px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+
+    .inventory-box {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      display: flex;
+      gap: 10px;
+      background: rgba(0, 20, 40, 0.75);
+      backdrop-filter: blur(4px);
+      padding: 8px 12px;
+      border-radius: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      z-index: 5;
+    }
+    .inv-slot {
+      width: 42px;
+      height: 42px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      cursor: pointer;
+      position: relative;
+    }
+    .inv-slot:hover { background: rgba(255, 255, 255, 0.25); }
+    .inv-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      background: #ff4757; color: white;
+      font-size: 10px; border-radius: 50%;
+      padding: 2px 6px; font-weight: bold;
+    }
+    
+    .btn-top-right {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+    .icon-btn {
+      background: rgba(0, 20, 40, 0.65);
+      backdrop-filter: blur(4px);
+      color: white;
+      border: 2px solid white;
+      width: 36px;
+      height: 36px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .btn-shop {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: #28a745;
+      color: white;
+      border: 2px solid white;
+      padding: 8px 18px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 5;
+    }
+    .btn-shop:hover { background: #218838; }
+
+    .shop-modal, .pause-modal, .game-over, .start-screen, .victory-modal {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 10, 25, 0.85);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    
+    .start-screen { display: flex; }
+
+    .shop-content {
+      width: 740px;
+      max-height: 430px;
+      background: #0d4b75;
+      border: 3px solid #fff;
+      border-radius: 15px;
+      padding: 20px;
+      color: white;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .shop-title, .pause-title, .game-over h1, .start-title, .victory-title {
+      text-align: center;
+      font-size: 26px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    .fish-card {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .fish-name { font-weight: bold; font-size: 12px; margin-bottom: 2px; }
+    .fish-perk { font-size: 10px; color: #feca57; margin-bottom: 4px; min-height: 24px; }
+    .btn-buy {
+      margin-top: auto;
+      background: #ffc107;
+      color: #000;
+      border: none;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-buy:disabled { background: #666; color: #aaa; cursor: default; }
+    .btn-close {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #dc3545; color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .modal-box {
+      background: #0d4b75;
+      border: 3px solid #fff;
+      border-radius: 15px;
+      padding: 25px 35px;
+      text-align: center;
+      color: white;
+      max-width: 600px;
+    }
+    .btn-action {
+      margin-top: 15px;
+      background: #20bf6b;
+      border: 2px solid white;
+      padding: 10px 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .btn-action:hover { background: #26de81; transform: scale(1.05); }
+    .score-info { margin: 6px 0; font-size: 15px; }
+
+    #levelBanner {
+      position: absolute;
+      top: 35%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px; font-weight: bold;
+      color: #feca57;
+      text-shadow: 0 0 10px rgba(254,202,87,0.8), 3px 3px 6px #000;
+      display: none; z-index: 8;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    #achievementToast {
+      position: absolute;
+      top: 15px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(241, 196, 15, 0.95);
+      color: #2c3e50;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: none; z-index: 9;
+      pointer-events: none;
+    }
+
+    #damageFlash {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 0, 0, 0.3);
+      pointer-events: none;
+      display: none;
+      z-index: 7;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <div id="damageFlash"></div>
+
+    <div class="hud">
+      <div class="hud-item"><span id="heartsContainer">❤️❤️❤️❤️❤️</span></div>
+      <div class="hud-item">🚀 <span id="levelLabel">Nível: 1/25</span></div>
+      <div class="hud-item">⭐ Pontos: <span id="score">0</span></div>
+      <div class="hud-item">🏆 Recorde: <span id="highscore">0</span></div>
+      <div class="hud-item">🐚 <span id="coins">R$ 0,00</span></div>
+    </div>
+
+    <div class="inventory-box">
+      <div class="inv-slot" id="slotShield" title="Ativar Escudo">
+        🛡️ <span class="inv-badge" id="countShield">0</span>
+      </div>
+      <div class="inv-slot" id="slotHeart" title="Usar Vida Extra">
+        ❤️ <span class="inv-badge" id="countHeart">0</span>
+      </div>
+    </div>
+
+    <div class="btn-top-right">
+      <button class="icon-btn" id="btnPause" title="Pausar (P)">⏸</button>
+    </div>
+
+    <button class="btn-shop" id="openShop">LOJA DE PEIXES & ITENS</button>
+
+    <div id="levelBanner">PRÓXIMO NÍVEL!</div>
+    <div id="achievementToast">🏆 Conquista Desbloqueada!</div>
+
+    <div class="start-screen" id="startScreen">
+      <div class="modal-box">
+        <div class="start-title" style="color: #48dbfb;">Algas Saltitantes</div>
+        <p style="margin-bottom: 10px;">Pressione ESPAÇO ou toque para saltar.</p>
+        <p style="font-size: 12px; opacity: 0.8; margin-bottom: 15px;">Cuidado com anzóis, peixes elétricos e botas! Encontre o Submarino Raro!</p>
+        <button class="btn-action" id="btnStart">START</button>
+      </div>
+    </div>
+
+    <div class="shop-modal" id="shopModal">
+      <div class="shop-content">
+        <button class="btn-close" id="closeShop">X</button>
+        <div class="shop-title">Loja do Oceano (Peixes Únicos & Itens)</div>
+        <div class="shop-grid" id="shopGrid"></div>
+      </div>
+    </div>
+
+    <div class="pause-modal" id="pauseModal">
+      <div class="modal-box">
+        <div class="pause-title">Jogo Pausado</div>
+        <button class="btn-action" id="btnResume">Continuar</button>
+      </div>
+    </div>
+
+    <div class="game-over" id="gameOverScreen">
+      <div class="modal-box">
+        <h1 style="color: #ff4757;">Fim de Jogo!</h1>
+        <p class="score-info" id="finalScore">Pontuação Atual: 0</p>
+        <p class="score-info" id="lastScoreText" style="color: #48dbfb;">Última Pontuação: 0</p>
+        <p class="score-info" id="bestScoreText" style="color: #feca57;">Melhor Recorde: 0</p>
+        <button class="btn-action" id="btnRestart">Jogar Novamente</button>
+      </div>
+    </div>
+
+    <div class="victory-modal" id="victoryModal">
+      <div class="modal-box">
+        <div class="victory-title" style="color: #feca57;">🎉 VOCÊ ZEROU O JOGO! 🎉</div>
+        <p style="font-size: 15px; line-height: 1.5; margin: 15px 0;">
+          Parabéns! Você superou todos os 25 níveis do oceano! <br><br>
+          Este jogo foi idealizado e criado com muito carinho e criatividade pela jovem desenvolvedora 
+          <strong>Allana Gabriela</strong>, de apenas <strong>11 Anos</strong>, no ano de <strong>2026</strong>. 
+          Ela provou que não há limite de idade para transformar imaginação em arte e código!
+        </p>
+        <button class="btn-action" id="btnVictoryRestart">Jogar Novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    
+    function playSound(type) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (type === 'jump') {
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === 'coin') {
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.setValueAtTime(800, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if (type === 'shield' || type === 'sub') {
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+      } else if (type === 'hit') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      }
+    }
+
+    let score = 0;
+    let level = 1;
+    let lives = 5;
+    let lastScore = parseInt(localStorage.getItem('sea_lastscore')) || 0;
+    let highscore = parseInt(localStorage.getItem('sea_highscore')) || 0;
+    let coins = parseFloat(localStorage.getItem('sea_coins')) || 0.00;
+    let selectedFishIndex = parseInt(localStorage.getItem('sea_selectedFish')) || 0;
+    
+    let isBonusStage = false;
+    let bonusTimeRemaining = 60;
+    let bonusIntervalId = null;
+
+    let shieldTime = 0;
+    let invulnerableTimer = 0;
+    
+    let submarineTimeRemaining = 0;
+    let submarinesSpawnedCount = 0;
+
+    let inventory = {
+      shields: parseInt(localStorage.getItem('sea_inv_shields')) || 0,
+      hearts: parseInt(localStorage.getItem('sea_inv_hearts')) || 0
+    };
+
+    let achievements = JSON.parse(localStorage.getItem('sea_achievements')) || {};
+
+    const fishTemplate = [
+      { name: "Fofucho", cost: 0, color: "#ff9f43", pattern: "none", type: "goldfish", perk: "Nenhum bônus", multiplier: 1, magnet: false },
+      { name: "Nemo", cost: 12, color: "#ff6b6b", pattern: "stripes", patternColor: "#ffffff", type: "clownfish", perk: "+10% de moedas", multiplier: 1.1, magnet: false },
+      { name: "Zigue", cost: 24, color: "#54a0ff", pattern: "stripes", patternColor: "#feca57", type: "tang", perk: "Salto suave", multiplier: 1, magnet: false },
+      { name: "Pintado", cost: 36, color: "#2ed573", pattern: "dots", patternColor: "#ffffff", type: "puffer", perk: "+15% de moedas", multiplier: 1.15, magnet: false },
+      { name: "Tubarão Léo", cost: 48, color: "#70a1ff", pattern: "none", type: "shark", perk: "+20% de pontos", multiplier: 1.2, magnet: false },
+      { name: "Bolinha", cost: 60, color: "#e84393", pattern: "dots", patternColor: "#f1c40f", type: "goldfish", perk: "Ímã leve de conchas", multiplier: 1, magnet: true },
+      { name: "Zebra-Mar", cost: 72, color: "#2d3436", pattern: "stripes", patternColor: "#ffffff", type: "tang", perk: "+25% de moedas", multiplier: 1.25, magnet: false },
+      { name: "Polvo Otto", cost: 84, color: "#ff4757", pattern: "dots", patternColor: "#ff7675", type: "octopus", perk: "+30% de pontos", multiplier: 1.3, magnet: false },
+      { name: "Água-Viva", cost: 96, color: "#a55eea", pattern: "none", type: "jelly", perk: "Ímã forte de conchas", multiplier: 1, magnet: true },
+      { name: "Coralino", cost: 110, color: "#ff7f50", pattern: "stripes", patternColor: "#2e86de", type: "angel", perk: "+35% de moedas", multiplier: 1.35, magnet: false },
+      { name: "Dourado", cost: 130, color: "#ffa502", pattern: "dots", patternColor: "#ffffff", type: "goldfish", perk: "+40% de pontos", multiplier: 1.4, magnet: false },
+      { name: "Peixe-Disco", cost: 150, color: "#9b59b6", pattern: "dots", patternColor: "#3498db", type: "puffer", perk: "+45% de moedas", multiplier: 1.45, magnet: false },
+      { name: "Tubarão-Baleia", cost: 180, color: "#34495e", pattern: "dots", patternColor: "#ecf0f1", type: "shark", perk: "+50% de pontos", multiplier: 1.5, magnet: false },
+      { name: "Tigre do Mar", cost: 210, color: "#e67e22", pattern: "stripes", patternColor: "#2c3e50", type: "clownfish", perk: "+55% de moedas", multiplier: 1.55, magnet: false },
+      { name: "Neon Glow", cost: 240, color: "#00d2d3", pattern: "stripes", patternColor: "#ff9ff3", type: "tang", perk: "Ímã supremo", multiplier: 1, magnet: true },
+      { name: "Dálmata", cost: 270, color: "#ffffff", pattern: "dots", patternColor: "#000000", type: "goldfish", perk: "+60% de pontos", multiplier: 1.6, magnet: false },
+      { name: "Sombra", cost: 300, color: "#2f3542", pattern: "stripes", patternColor: "#747d8c", type: "shark", perk: "+70% de moedas", multiplier: 1.7, magnet: false },
+      { name: "Camaleão", cost: 340, color: "#1abc9c", pattern: "dots", patternColor: "#e74c3c", type: "puffer", perk: "+80% de pontos", multiplier: 1.8, magnet: false },
+      { name: "Princesa Rara", cost: 380, color: "#fd79a8", pattern: "stripes", patternColor: "#ffffff", type: "angel", perk: "+100% de moedas", multiplier: 2.0, magnet: true },
+      { name: "Imperador Mítico", cost: 450, color: "#f1c40f", pattern: "dots", patternColor: "#8e44ad", type: "angel", perk: "Lendário: Tudo 2x", multiplier: 2.0, magnet: true }
+    ];
+
+    let unlockedFishes = JSON.parse(localStorage.getItem('sea_unlockedFishes')) || [true, ...Array(19).fill(false)];
+    const fishes = fishTemplate.map((f, i) => ({ ...f, unlocked: unlockedFishes[i] || i === 0 }));
+
+    function generateThemes() {
+      const list = [];
+      const colors = ['#1e88e5', '#00b894', '#0984e3', '#2c3e50', '#10ac84', '#8e44ad', '#d35400', '#16a085', '#27ae60', '#2980b9'];
+      const sandColors = ['#eccc68', '#ff7675', '#95a5a6', '#34495e', '#1abc9c', '#f39c12', '#bdc3c7'];
+      const algaColors = ['#73fb48', '#a29bfe', '#ff7675', '#00cec9', '#ff9ff3', '#f1c40f', '#e74c3c', '#2ecc71'];
+
+      for(let i = 0; i < 25; i++) {
+        list.push({
+          topColor: colors[i % colors.length],
+          midColor: colors[(i + 3) % colors.length],
+          botColor: "#021024",
+          sandColor: sandColors[i % sandColors.length],
+          algaColor: algaColors[i % algaColors.length]
+        });
+      }
+      return list;
+    }
+
+    const themes = generateThemes();
+
+    let gameStarted = false;
+    let gameActive = false;
+    let isPaused = false;
+    let frameCount = 0;
+    let baseSpeed = 2.2;
+    let gameSpeed = baseSpeed;
+    let spawnInterval = 120;
+    let currentWind = 0;
+
+    const player = {
+      x: 100, y: 200, width: 30, height: 22,
+      gravity: 0.35, lift: -7.0, velocity: 0,
+      jump() {
+        if (!gameActive || isPaused) return;
+        this.velocity = this.lift;
+        playSound('jump');
+      },
+      update() {
+        this.velocity += this.gravity + currentWind;
+        this.y += this.velocity;
+
+        if (this.y + this.height > canvas.height - 30) {
+          this.y = canvas.height - 30 - this.height;
+          takeDamage();
+        }
+        if (this.y < 0) { this.y = 0; this.velocity = 0; }
+      },
+      draw() {
+        if (invulnerableTimer > 0 && Math.floor(frameCount / 6) % 2 === 0) {
+          return;
+        }
+
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+
+        if (submarineTimeRemaining > 0) {
+          // Desenhar Submarino Raro
+          ctx.fillStyle = '#f1c40f';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 28, 16, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#d35400';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Escotilha
+          ctx.fillStyle = '#3498db';
+          ctx.beginPath();
+          ctx.arc(8, -2, 6, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Hélice
+          ctx.fillStyle = '#7f8c8d';
+          ctx.fillRect(-30, -6, 4, 12);
+        } else {
+          let angle = Math.min(Math.max(this.velocity * 0.05, -0.5), 0.5);
+          ctx.rotate(angle);
+          drawFishSprite(ctx, -this.width/2, -this.height/2, this.width, this.height, fishes[selectedFishIndex]);
+        }
+
+        ctx.restore();
+
+        if (shieldTime > 0 && submarineTimeRemaining <= 0) {
+          ctx.strokeStyle = '#00d2d3';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(this.x + this.width/2, this.y + this.height/2, this.width * 0.8, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    };
+
+    let backgroundBubbles = [];
+    for(let i = 0; i < 25; i++) {
+      backgroundBubbles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 4 + 1,
+        speed: Math.random() * 1 + 0.5
+      });
+    }
+
+    let trailBubbles = [];
+    let particles = [];
+    let obstacles = [];
+    let coinItems = [];
+    let hazardItems = [];
+
+    function triggerAchievement(id, title) {
+      if (!achievements[id]) {
+        achievements[id] = true;
+        localStorage.setItem('sea_achievements', JSON.stringify(achievements));
+        let toast = document.getElementById('achievementToast');
+        toast.innerText = `🏆 Conquista: ${title}`;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }
+    }
+
+    function addSparkles(x, y, color) {
+      for(let i = 0; i < 8; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 20,
+          color: color || '#f1c40f'
+        });
+      }
+    }
+
+    function triggerDamageFlash() {
+      let f = document.getElementById('damageFlash');
+      f.style.display = 'block';
+      setTimeout(() => { f.style.display = 'none'; }, 150);
+    }
+
+    function formatMoney(value) {
+      return `R$ ${value.toFixed(2).replace('.', ',')}`;
+    }
+
+    function updateHeartsDisplay() {
+      let heartsStr = "";
+      for(let i = 0; i < lives; i++) heartsStr += "❤️";
+      document.getElementById('heartsContainer').innerText = heartsStr || "🖤";
+    }
+
+    function updateInventoryDisplay() {
+      document.getElementById('countShield').innerText = inventory.shields;
+      document.getElementById('countHeart').innerText = inventory.hearts;
+    }
+
+    function updateHUD() {
+      if (submarineTimeRemaining > 0) {
+        document.getElementById('levelLabel').innerText = `SUBMARINO: ${Math.ceil(submarineTimeRemaining / 60)}s`;
+      } else if (isBonusStage) {
+        document.getElementById('levelLabel').innerText = `BÔNUS: ${bonusTimeRemaining}s`;
+      } else {
+        document.getElementById('levelLabel').innerText = `Nível: ${level}/25`;
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('sea_coins', coins);
+      localStorage.setItem('sea_lastscore', lastScore);
+      localStorage.setItem('sea_highscore', highscore);
+      localStorage.setItem('sea_selectedFish', selectedFishIndex);
+      localStorage.setItem('sea_unlockedFishes', JSON.stringify(fishes.map(f => f.unlocked)));
+      localStorage.setItem('sea_inv_shields', inventory.shields);
+      localStorage.setItem('sea_inv_hearts', inventory.hearts);
+    }
+
+    function showLevelBanner(text) {
+      let b = document.getElementById('levelBanner');
+      b.innerText = text;
+      b.style.display = 'block';
+      setTimeout(() => { b.style.display = 'none'; }, 2000);
+    }
+
+    function triggerBonusStage() {
+      isBonusStage = true;
+      bonusTimeRemaining = 60;
+      obstacles = [];
+      hazardItems = [];
+      showLevelBanner("60 SEG DE ESTÁGIO BÔNUS!");
+      updateHUD();
+
+      if (bonusIntervalId) clearInterval(bonusIntervalId);
+      bonusIntervalId = setInterval(() => {
+        if (!isPaused && gameActive) {
+          bonusTimeRemaining--;
+          updateHUD();
+          if (bonusTimeRemaining <= 0) {
+            endBonusStage();
+          }
+        }
+      }, 1000);
+    }
+
+    function endBonusStage() {
+      clearInterval(bonusIntervalId);
+      bonusIntervalId = null;
+      isBonusStage = false;
+      coinItems = [];
+      level++;
+      if (level > 25) {
+        victory();
+        return;
+      }
+      showLevelBanner(`PRÓXIMO NÍVEL: ${level}!`);
+      gameSpeed = baseSpeed + (level - 1) * 0.25;
+      spawnInterval = Math.max(60, 120 - (level - 1) * 2);
+      updateHUD();
+    }
+
+    function takeDamage() {
+      if (invulnerableTimer > 0 || shieldTime > 0 || submarineTimeRemaining > 0) return;
+
+      lives--;
+      updateHeartsDisplay();
+      playSound('hit');
+      triggerDamageFlash();
+
+      if (lives <= 0) {
+        gameOver();
+      } else {
+        invulnerableTimer = 90;
+      }
+    }
+
+    function spawnObstacle() {
+      if (isBonusStage) {
+        coinItems.push({
+          x: canvas.width + 15,
+          y: Math.random() * (canvas.height - 100) + 40,
+          radius: 12,
+          type: Math.random() < 0.05 ? 'shield' : (Math.random() < 0.02 ? 'heart' : 'coin'),
+          collected: false
+        });
+        return;
+      }
+
+      let gap = Math.max(90, 160 - (level * 3));
+      let minHeight = 40;
+      let maxHeight = canvas.height - gap - minHeight - 30;
+      let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+
+      let isMoving = level >= 3;
+      let moveSpeed = isMoving ? (Math.random() > 0.5 ? 1 : -1) * (0.5 + level * 0.1) : 0;
+
+      obstacles.push({
+        x: canvas.width,
+        width: 50,
+        top: topHeight,
+        bottom: canvas.height - topHeight - gap - 30,
+        passed: false,
+        moveSpeed: moveSpeed
+      });
+
+      // Spawn de Perigos (Anzol, Peixe Elétrico)
+      if (level >= 2 && Math.random() < 0.3) {
+        hazardItems.push({
+          x: canvas.width + 100,
+          y: Math.random() < 0.5 ? 20 : Math.random() * (canvas.height - 100) + 50,
+          type: Math.random() < 0.5 ? 'hook' : 'eel',
+          vy: 0.8
+        });
+      }
+
+      // Spawn de Itens (Incidência de vida e escudo reduzida!)
+      if (Math.random() > 0.3) {
+        let rand = Math.random();
+        let itemType = 'coin';
+
+        if (rand < 0.02) itemType = 'shield';      // 2% chance de escudo
+        else if (rand < 0.028) itemType = 'heart';  // 0.8% chance de vida extra
+        else if (rand < 0.08) itemType = 'boot';   // Bota velha (Perde pontos)
+        else if (submarinesSpawnedCount < 3 && rand < 0.095) { // Submarino Raro (Até 3x no jogo)
+          itemType = 'sub';
+          submarinesSpawnedCount++;
+        }
+
+        coinItems.push({
+          x: canvas.width + 15,
+          y: topHeight + gap / 2,
+          radius: 12,
+          type: itemType,
+          collected: false
+        });
+      }
+    }
+
+    function drawFishSprite(context, x, y, w, h, fish) {
+      context.fillStyle = fish.color;
+      
+      if (fish.type === 'shark') {
+        context.beginPath();
+        context.ellipse(x + w * 0.5, y + h * 0.5, w * 0.5, h * 0.35, 0, 0, Math.PI * 2);
+        context.fill();
+        context.beginPath();
+        context.moveTo(x + w * 0.4, y + h * 0.1);
+        context.lineTo(x + w * 0.2, y - h * 0.3);
+        context.lineTo(x + w * 0.6, y + h * 0.2);
+        context.fill();
+      } else if (fish.type === 'octopus') {
+        context.beginPath();
+        context.arc(x + w * 0.5, y + h * 0.4, h * 0.4, 0, Math.PI * 2);
+        context.fill();
+        for(let i=0; i<4; i++) {
+          context.fillRect(x + w*0.2 + i*5, y + h*0.7, 3, 7);
+        }
+      } else if (fish.type === 'jelly') {
+        context.beginPath();
+        context.arc(x + w * 0.5, y + h * 0.4, h * 0.45, Math.PI, 0);
+        context.fill();
+        context.fillRect(x + w * 0.3, y + h * 0.4, 2, 8);
+        context.fillRect(x + w * 0.5, y + h * 0.4, 2, 10);
+        context.fillRect(x + w * 0.7, y + h * 0.4, 2, 8);
+      } else {
+        context.beginPath();
+        context.ellipse(x + w * 0.5, y + h * 0.5, w * 0.4, h * 0.4, 0, 0, Math.PI * 2);
+        context.fill();
+        context.beginPath();
+        context.moveTo(x + w * 0.2, y + h * 0.5);
+        context.lineTo(x - w * 0.2, y + h * 0.1);
+        context.lineTo(x - w * 0.2, y + h * 0.9);
+        context.closePath();
+        context.fill();
+      }
+
+      if (fish.pattern === 'stripes') {
+        context.fillStyle = fish.patternColor || '#ffffff';
+        context.fillRect(x + w * 0.35, y + h * 0.2, 3, h * 0.6);
+        context.fillRect(x + w * 0.55, y + h * 0.2, 3, h * 0.6);
+      } else if (fish.pattern === 'dots') {
+        context.fillStyle = fish.patternColor || '#ffffff';
+        context.beginPath();
+        context.arc(x + w * 0.35, y + h * 0.35, 2, 0, Math.PI * 2);
+        context.arc(x + w * 0.55, y + h * 0.45, 2, 0, Math.PI * 2);
+        context.arc(x + w * 0.45, y + h * 0.65, 2, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      context.fillStyle = '#fff';
+      context.beginPath();
+      context.arc(x + w * 0.7, y + h * 0.35, 3, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = '#000';
+      context.beginPath();
+      context.arc(x + w * 0.75, y + h * 0.35, 1.5, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    function drawRealisticAlga(x, width, height, isTop) {
+      let theme = themes[(level - 1) % themes.length];
+
+      ctx.save();
+      ctx.translate(x, isTop ? 0 : canvas.height - 30);
+
+      if (isTop) ctx.scale(1, -1);
+
+      let algaHeight = height;
+
+      ctx.fillStyle = '#1c1d21';
+      ctx.beginPath();
+      ctx.moveTo(width * 0.1, 0);
+      ctx.bezierCurveTo(-width * 0.3, -algaHeight * 0.4, width * 0.1, -algaHeight * 0.7, width * 0.3, -algaHeight);
+      ctx.bezierCurveTo(width * 1.1, -algaHeight * 0.6, width * 1.2, -algaHeight * 0.3, width * 0.7, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = theme.algaColor;
+      ctx.beginPath();
+      ctx.moveTo(width * 0.25, 0);
+      ctx.bezierCurveTo(-width * 0.1, -algaHeight * 0.4, width * 0.2, -algaHeight * 0.7, width * 0.35, -algaHeight * 0.95);
+      ctx.bezierCurveTo(width * 0.85, -algaHeight * 0.6, width * 0.9, -algaHeight * 0.3, width * 0.55, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawCoin(coin) {
+      ctx.save();
+      let icon = '🐚';
+      if (coin.type === 'shield') { icon = '🛡️'; ctx.fillStyle = '#00d2d3'; }
+      else if (coin.type === 'heart') { icon = '❤️'; ctx.fillStyle = '#ff4757'; }
+      else if (coin.type === 'boot') { icon = '🥾'; ctx.fillStyle = '#576574'; }
+      else if (coin.type === 'sub') { icon = '🤿'; ctx.fillStyle = '#f1c40f'; }
+      else { ctx.fillStyle = '#ffda79'; }
+
+      ctx.beginPath();
+      ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(icon, coin.x, coin.y);
+      ctx.restore();
+    }
+
+    function drawHazards() {
+      hazardItems.forEach(h => {
+        ctx.save();
+        if (h.type === 'hook') {
+          // Linha e Anzol
+          ctx.strokeStyle = '#aaa';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(h.x, 0);
+          ctx.lineTo(h.x, h.y);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#d1d8e0';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(h.x - 5, h.y + 5, 6, 0, Math.PI);
+          ctx.stroke();
+        } else if (h.type === 'eel') {
+          // Peixe Elétrico
+          ctx.fillStyle = frameCount % 10 < 5 ? '#f1c40f' : '#3498db';
+          ctx.beginPath();
+          ctx.ellipse(h.x, h.y, 20, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawWaterBackground() {
+      let theme = themes[(level - 1) % themes.length];
+
+      let waterGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      waterGrad.addColorStop(0, theme.topColor);
+      waterGrad.addColorStop(0.6, theme.midColor);
+      waterGrad.addColorStop(1, theme.botColor);
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.beginPath();
+      ctx.moveTo(100, 0); ctx.lineTo(250, canvas.height); ctx.lineTo(150, canvas.height); ctx.lineTo(50, 0);
+      ctx.moveTo(400, 0); ctx.lineTo(600, canvas.height); ctx.lineTo(480, canvas.height); ctx.lineTo(320, 0);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      backgroundBubbles.forEach(b => {
+        if (!isPaused && gameActive) {
+          b.y -= b.speed;
+          if (b.y < -10) { b.y = canvas.height + 10; b.x = Math.random() * canvas.width; }
+        }
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = theme.sandColor;
+      ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+    }
+
+    function update() {
+      if (!gameActive || isPaused) return;
+
+      frameCount++;
+      let currentFish = fishes[selectedFishIndex];
+
+      if (submarineTimeRemaining > 0) {
+        submarineTimeRemaining--;
+        if (submarineTimeRemaining <= 0) {
+          gameSpeed = baseSpeed + (level - 1) * 0.25;
+        }
+        updateHUD();
+      }
+      
+      if (shieldTime > 0) shieldTime--;
+      if (invulnerableTimer > 0) invulnerableTimer--;
+
+      if (level >= 3 && frameCount % 180 === 0) {
+        currentWind = (Math.random() - 0.5) * 0.15;
+      }
+
+      player.update();
+
+      // Partículas e rastros
+      if (frameCount % 8 === 0) {
+        trailBubbles.push({
+          x: player.x,
+          y: player.y + player.height / 2,
+          radius: Math.random() * 3 + 1,
+          vy: -Math.random() * 1 - 0.5,
+          alpha: 1
+        });
+      }
+
+      for (let i = trailBubbles.length - 1; i >= 0; i--) {
+        let tb = trailBubbles[i];
+        tb.y += tb.vy;
+        tb.alpha -= 0.02;
+        if (tb.alpha <= 0) trailBubbles.splice(i, 1);
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Atualizar perigos
+      for (let i = hazardItems.length - 1; i >= 0; i--) {
+        let h = hazardItems[i];
+        h.x -= gameSpeed * 1.2;
+        if (h.type === 'hook') {
+          h.y += Math.sin(frameCount * 0.05) * 0.5;
+        }
+
+        let dist = Math.hypot((player.x + player.width/2) - h.x, (player.y + player.height/2) - h.y);
+        if (dist < player.width/2 + 10) {
+          takeDamage();
+          hazardItems.splice(i, 1);
+          continue;
+        }
+        if (h.x < -20) hazardItems.splice(i, 1);
+      }
+
+      let activeSpawnInterval = isBonusStage ? 35 : spawnInterval;
+      if (frameCount % activeSpawnInterval === 0) spawnObstacle();
+
+      if (!isBonusStage) {
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          let obs = obstacles[i];
+          obs.x -= gameSpeed;
+
+          if (obs.moveSpeed !== 0) {
+            obs.top += obs.moveSpeed;
+            if (obs.top < 30 || obs.top > 200) obs.moveSpeed *= -1;
+          }
+
+          let pLeft = player.x + 3;
+          let pRight = player.x + player.width - 3;
+          let pTop = player.y + 3;
+          let pBottom = player.y + player.height - 3;
+
+          let oLeft = obs.x;
+          let oRight = obs.x + obs.width;
+          let topAlgaBottom = obs.top;
+          let bottomAlgaTop = canvas.height - obs.bottom - 30;
+
+          if (pRight > oLeft && pLeft < oRight) {
+            if (pTop < topAlgaBottom || pBottom > bottomAlgaTop) {
+              takeDamage();
+            }
+          }
+
+          if (obs.x + obs.width < player.x && !obs.passed) {
+            score += Math.round(10 * currentFish.multiplier);
+            obs.passed = true;
+            document.getElementById('score').innerText = score;
+            
+            triggerAchievement('first_step', 'Primeira Viagem!');
+
+            let targetLevel = Math.floor(score / 80) + 1;
+            
+            if (targetLevel > 25) {
+              victory();
+              return;
+            }
+
+            if (targetLevel !== level) {
+              if (targetLevel % 5 === 0 && !isBonusStage) {
+                triggerBonusStage();
+              } else {
+                level = targetLevel;
+                showLevelBanner(`PRÓXIMO NÍVEL: ${level}!`);
+                if (submarineTimeRemaining <= 0) {
+                  gameSpeed = baseSpeed + (level - 1) * 0.25;
+                }
+                spawnInterval = Math.max(60, 120 - (level - 1) * 2);
+                updateHUD();
+              }
+            }
+
+            if (score > highscore) {
+              highscore = score;
+              document.getElementById('highscore').innerText = highscore;
+            }
+          }
+
+          if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+        }
+      }
+
+      // Ímã de conchas do peixe
+      for (let i = coinItems.length - 1; i >= 0; i--) {
+        let coin = coinItems[i];
+        coin.x -= gameSpeed;
+
+        if (currentFish.magnet && coin.type === 'coin') {
+          let dx = (player.x + player.width/2) - coin.x;
+          let dy = (player.y + player.height/2) - coin.y;
+          let d = Math.hypot(dx, dy);
+          if (d < 120) {
+            coin.x += (dx / d) * 3;
+            coin.y += (dy / d) * 3;
+          }
+        }
+
+        let dist = Math.hypot((player.x + player.width/2) - coin.x, (player.y + player.height/2) - coin.y);
+        if (dist < player.width/2 + coin.radius && !coin.collected) {
+          coin.collected = true;
+          
+          if (coin.type === 'shield') {
+            inventory.shields++;
+            playSound('coin');
+            addSparkles(coin.x, coin.y, '#00d2d3');
+          } else if (coin.type === 'heart') {
+            inventory.hearts++;
+            playSound('coin');
+            addSparkles(coin.x, coin.y, '#ff4757');
+          } else if (coin.type === 'boot') {
+            score = Math.max(0, score - 30);
+            document.getElementById('score').innerText = score;
+            playSound('hit');
+          } else if (coin.type === 'sub') {
+            submarineTimeRemaining = 1200; // 20 segundos (~1200 frames)
+            gameSpeed = baseSpeed * 2.2;
+            playSound('sub');
+            showLevelBanner("SUBMARINO ATIVADO!");
+            triggerAchievement('sub_captain', 'Capitão do Submarino!');
+            addSparkles(coin.x, coin.y, '#f1c40f');
+          } else {
+            let gain = 3.00 * currentFish.multiplier;
+            coins += gain;
+            playSound('coin');
+            addSparkles(coin.x, coin.y, '#f1c40f');
+            document.getElementById('coins').innerText = formatMoney(coins);
+          }
+          saveData();
+          updateInventoryDisplay();
+          coinItems.splice(i, 1);
+          continue;
+        }
+
+        if (coin.x < 0) coinItems.splice(i, 1);
+      }
+    }
+
+    function render() {
+      drawWaterBackground();
+
+      trailBubbles.forEach(tb => {
+        ctx.strokeStyle = `rgba(255, 255, 255, ${tb.alpha})`;
+        ctx.beginPath();
+        ctx.arc(tb.x, tb.y, tb.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      });
+
+      if (!isBonusStage) {
+        obstacles.forEach(obs => {
+          drawRealisticAlga(obs.x, obs.width, obs.top, true);
+          drawRealisticAlga(obs.x, obs.width, obs.bottom, false);
+        });
+      }
+
+      drawHazards();
+      coinItems.forEach(drawCoin);
+      player.draw();
+    }
+
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      initAudio();
+      gameStarted = true;
+      gameActive = true;
+      isPaused = false;
+      document.getElementById('startScreen').style.display = 'none';
+      updateHeartsDisplay();
+      updateInventoryDisplay();
+      updateHUD();
+    }
+
+    function victory() {
+      gameActive = false;
+      if (bonusIntervalId) clearInterval(bonusIntervalId);
+      saveData();
+      document.getElementById('victoryModal').style.display = 'flex';
+    }
+
+    function gameOver() {
+      if (!gameActive) return;
+      playSound('hit');
+      gameActive = false;
+      if (bonusIntervalId) clearInterval(bonusIntervalId);
+      lastScore = score;
+      saveData();
+
+      document.getElementById('finalScore').innerText = `Pontuação Atual: ${score}`;
+      document.getElementById('lastScoreText').innerText = `Última Pontuação: ${lastScore}`;
+      document.getElementById('bestScoreText').innerText = `Melhor Recorde: ${highscore}`;
+      document.getElementById('gameOverScreen').style.display = 'flex';
+    }
+
+    function resetGame() {
+      if (bonusIntervalId) clearInterval(bonusIntervalId);
+      bonusIntervalId = null;
+      isBonusStage = false;
+      
+      player.y = 200;
+      player.velocity = 0;
+      obstacles = [];
+      coinItems = [];
+      hazardItems = [];
+      particles = [];
+      trailBubbles = [];
+      score = 0;
+      level = 1;
+      lives = 5;
+      shieldTime = 0;
+      invulnerableTimer = 0;
+      submarineTimeRemaining = 0;
+      submarinesSpawnedCount = 0;
+      currentWind = 0;
+      gameSpeed = baseSpeed;
+      spawnInterval = 120;
+      frameCount = 0;
+      gameActive = true;
+      isPaused = false;
+      
+      updateHeartsDisplay();
+      updateInventoryDisplay();
+      updateHUD();
+      document.getElementById('score').innerText = score;
+      document.getElementById('gameOverScreen').style.display = 'none';
+      document.getElementById('victoryModal').style.display = 'none';
+    }
+
+    function togglePause() {
+      if (!gameActive) return;
+      isPaused = !isPaused;
+      document.getElementById('pauseModal').style.display = isPaused ? 'flex' : 'none';
+    }
+
+    document.getElementById('slotShield').addEventListener('click', () => {
+      if (inventory.shields > 0 && gameActive && !isPaused) {
+        inventory.shields--;
+        shieldTime = 300;
+        playSound('shield');
+        saveData();
+        updateInventoryDisplay();
+      }
+    });
+
+    document.getElementById('slotHeart').addEventListener('click', () => {
+      if (inventory.hearts > 0 && lives < 5 && gameActive && !isPaused) {
+        inventory.hearts--;
+        lives++;
+        playSound('coin');
+        saveData();
+        updateHeartsDisplay();
+        updateInventoryDisplay();
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        if (!gameStarted) startGame();
+        else player.jump();
+      }
+      if (e.code === 'KeyP') togglePause();
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (!gameStarted) startGame();
+      else player.jump();
+    });
+
+    document.getElementById('btnStart').addEventListener('click', startGame);
+    document.getElementById('btnPause').addEventListener('click', togglePause);
+    document.getElementById('btnResume').addEventListener('click', togglePause);
+    document.getElementById('btnVictoryRestart').addEventListener('click', resetGame);
+
+    const shopModal = document.getElementById('shopModal');
+    const shopGrid = document.getElementById('shopGrid');
+
+    function renderShop() {
+      shopGrid.innerHTML = '';
+
+      fishes.forEach((fish, index) => {
+        const card = document.createElement('div');
+        card.className = 'fish-card';
+        
+        let buttonText = fish.unlocked ? (selectedFishIndex === index ? "EM USO" : "USAR") : formatMoney(fish.cost);
+        let buttonDisabled = fish.unlocked && selectedFishIndex === index;
+
+        card.innerHTML = `
+          <div class="fish-name">${index + 1}. ${fish.name}</div>
+          <div class="fish-perk">${fish.perk}</div>
+          <canvas id="prev-${index}" width="50" height="25"></canvas>
+          <button class="btn-buy" ${buttonDisabled ? 'disabled' : ''}>${buttonText}</button>
+        `;
+
+        shopGrid.appendChild(card);
+
+        const prevCanvas = document.getElementById(`prev-${index}`);
+        const prevCtx = prevCanvas.getContext('2d');
+        drawFishSprite(prevCtx, 5, 0, 35, 22, fish);
+
+        card.querySelector('.btn-buy').addEventListener('click', () => {
+          if (fish.unlocked) {
+            selectedFishIndex = index;
+          } else if (coins >= fish.cost) {
+            coins -= fish.cost;
+            fish.unlocked = true;
+            selectedFishIndex = index;
+            document.getElementById('coins').innerText = formatMoney(coins);
+          }
+          saveData();
+          renderShop();
+        });
+      });
+
+      // Escudo Raro na loja
+      const itemShieldCard = document.createElement('div');
+      itemShieldCard.className = 'fish-card';
+      itemShieldCard.innerHTML = `
+        <div class="fish-name">Escudo Raro</div>
+        <div class="fish-perk">Proteção temporária</div>
+        <div style="font-size: 18px; margin: 2px 0;">🛡️</div>
+        <button class="btn-buy">R$ 250,00</button>
+      `;
+      itemShieldCard.querySelector('.btn-buy').addEventListener('click', () => {
+        if (coins >= 250.00) {
+          coins -= 250.00;
+          inventory.shields++;
+          document.getElementById('coins').innerText = formatMoney(coins);
+          saveData();
+          updateInventoryDisplay();
+        }
+      });
+      shopGrid.appendChild(itemShieldCard);
+    }
+
+    document.getElementById('openShop').addEventListener('click', () => {
+      isPaused = true;
+      renderShop();
+      shopModal.style.display = 'flex';
+    });
+
+    document.getElementById('closeShop').addEventListener('click', () => {
+      shopModal.style.display = 'none';
+      if (gameStarted) isPaused = false;
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', resetGame);
+
+    document.getElementById('coins').innerText = formatMoney(coins);
+    document.getElementById('highscore').innerText = highscore;
+    
+    updateHeartsDisplay();
+    updateInventoryDisplay();
+    
+    gameLoop();
+  </script>
+</body>
+</html>
